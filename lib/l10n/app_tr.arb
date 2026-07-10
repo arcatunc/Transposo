@@ -1,0 +1,27 @@
+{
+  "@@locale": "tr",
+  "appTitle": "Transposo",
+  "appSubtitle": "Nota kağıtlarını saniyeler içinde enstrümanına uyarla.",
+  "sourceInstrument": "Kaynak enstrüman",
+  "targetInstrument": "Hedef enstrüman",
+  "instrumentC": "Piyano / Flüt / Keman / Gitar (Do)",
+  "instrumentBb": "Trompet / Klarnet / Soprano ve Tenor Saksafon (Si♭)",
+  "instrumentEb": "Alto ve Bariton Saksafon (Mi♭)",
+  "instrumentF": "Korno (Fa)",
+  "notesInputLabel": "Notalar",
+  "notesInputHint": "örn. C:1 D:0.5 A+:2",
+  "notesInputHelper": "Biçim: Nota:Vuruş — üst oktav A+:1, alt oktav A-:1",
+  "transposeButton": "Dönüştür",
+  "resultLabel": "Dönüştürülen notalar",
+  "emptyInputWarning": "Lütfen önce nota girin.",
+  "noValidNotesWarning": "Geçerli nota bulunamadı — biçimi kontrol edin (örn. C:1 D:0.5).",
+  "skippedTokensNotice": "{count, plural, =1{1 geçersiz giriş atlandı.} other{{count} geçersiz giriş atlandı.}}",
+  "@skippedTokensNotice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "swapInstrumentsTooltip": "Enstrümanları değiştir"
+}

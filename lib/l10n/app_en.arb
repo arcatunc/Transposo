@@ -1,0 +1,27 @@
+{
+  "@@locale": "en",
+  "appTitle": "Transposo",
+  "appSubtitle": "The ultimate transposing tool for musicians.",
+  "sourceInstrument": "Source instrument",
+  "targetInstrument": "Target instrument",
+  "instrumentC": "Piano / Flute / Violin / Guitar (C)",
+  "instrumentBb": "Trumpet / Clarinet / Soprano & Tenor Sax (Bb)",
+  "instrumentEb": "Alto & Baritone Sax (Eb)",
+  "instrumentF": "French Horn (F)",
+  "notesInputLabel": "Notes",
+  "notesInputHint": "e.g. C:1 D:0.5 A+:2",
+  "notesInputHelper": "Format: Note:Beat — octave up A+:1, octave down A-:1",
+  "transposeButton": "Transpose",
+  "resultLabel": "Transposed notes",
+  "emptyInputWarning": "Please enter some notes first.",
+  "noValidNotesWarning": "No valid notes found — check the format (e.g. C:1 D:0.5).",
+  "skippedTokensNotice": "{count, plural, =1{1 invalid entry was skipped.} other{{count} invalid entries were skipped.}}",
+  "@skippedTokensNotice": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "swapInstrumentsTooltip": "Swap instruments"
+}
