@@ -70,4 +70,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get swapInstrumentsTooltip => 'Enstrümanları değiştir';
+
+  @override
+  String get sheetLabel => 'Nota görünümü';
 }

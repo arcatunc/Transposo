@@ -23,5 +23,6 @@
       }
     }
   },
-  "swapInstrumentsTooltip": "Swap instruments"
+  "swapInstrumentsTooltip": "Swap instruments",
+  "sheetLabel": "Sheet music"
 }

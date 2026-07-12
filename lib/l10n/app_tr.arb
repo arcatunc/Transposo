@@ -23,5 +23,6 @@
       }
     }
   },
-  "swapInstrumentsTooltip": "Enstrümanları değiştir"
+  "swapInstrumentsTooltip": "Enstrümanları değiştir",
+  "sheetLabel": "Nota görünümü"
 }

@@ -68,4 +68,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get swapInstrumentsTooltip => 'Swap instruments';
+
+  @override
+  String get sheetLabel => 'Sheet music';
 }

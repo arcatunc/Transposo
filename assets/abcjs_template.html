@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <!-- user-scalable=yes so musicians can pinch-to-zoom on stage. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=5.0">
+  <title>Transposo Sheet</title>
+  <script src="abcjs-basic-min.js"></script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 8px;
+      background: #ffffff;
+    }
+    #paper svg {
+      max-width: 100%;
+      height: auto;
+    }
+  </style>
+</head>
+<body>
+  <div id="paper"></div>
+  <script>
+    var lastAbc = null;
+    var retryTimer = null;
+
+    function reportError(message) {
+      if (window.SheetBridge) {
+        SheetBridge.postMessage('error:' + message);
+      }
+    }
+
+    window.onerror = function (message) {
+      reportError(message);
+    };
+
+    // Drawing into a zero-width viewport produces an invisible staff (the
+    // webview platform view may not be laid out yet when the page loads),
+    // so wait until the body has a real width before rendering.
+    function viewportReady() {
+      return document.body && document.body.clientWidth > 0;
+    }
+
+    function scheduleRetry() {
+      if (retryTimer !== null) return;
+      var tries = 0;
+      retryTimer = setInterval(function () {
+        if (viewportReady()) {
+          clearInterval(retryTimer);
+          retryTimer = null;
+          draw();
+        } else if (++tries > 100) {
+          clearInterval(retryTimer);
+          retryTimer = null;
+          reportError('viewport never received a size');
+        }
+      }, 50);
+    }
+
+    function draw() {
+      if (lastAbc === null || !window.ABCJS) return;
+      if (!viewportReady()) {
+        scheduleRetry();
+        return;
+      }
+      try {
+        ABCJS.renderAbc('paper', lastAbc, {
+          responsive: 'resize',
+          add_classes: true,
+          paddingtop: 0,
+          paddingbottom: 0
+        });
+        if (window.SheetBridge) {
+          SheetBridge.postMessage('rendered');
+        }
+      } catch (e) {
+        reportError(e && e.message ? e.message : String(e));
+      }
+    }
+
+    // Called from Dart via WebViewController.runJavaScript. The tune is
+    // remembered so resizes (e.g. device rotation) can redraw it.
+    function renderAbc(abc) {
+      lastAbc = abc;
+      draw();
+    }
+
+    window.addEventListener('load', function () {
+      if (!window.ABCJS) {
+        reportError('ABCJS library failed to load');
+      } else {
+        draw();
+      }
+    });
+
+    window.addEventListener('resize', draw);
+  </script>
+</body>
+</html>

@@ -199,6 +199,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Swap instruments'**
   String get swapInstrumentsTooltip;
+
+  /// No description provided for @sheetLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sheet music'**
+  String get sheetLabel;
 }
 
 class _AppLocalizationsDelegate

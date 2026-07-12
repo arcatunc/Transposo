@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../core/instruments.dart';
 import '../l10n/app_localizations.dart';
+import '../core/measure_partitioner.dart';
 import '../core/transposition.dart';
+import '../widgets/sheet_music_view.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -194,6 +196,23 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ],
                   ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Card(
+                clipBehavior: Clip.antiAlias,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                      child: Text(
+                        l10n.sheetLabel,
+                        style: theme.textTheme.titleMedium,
+                      ),
+                    ),
+                    SheetMusicView(abc: buildAbcDocument(_result)),
+                  ],
                 ),
               ),
             ],

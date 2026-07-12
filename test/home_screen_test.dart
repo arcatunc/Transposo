@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:transposo/main.dart';
+import 'package:transposo/widgets/sheet_music_view.dart';
 
 void main() {
   testWidgets('transposes typed notes from Piano (C) to Trumpet (Bb)',
@@ -15,6 +16,17 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('D:1 E:1 F#:1'), findsOneWidget);
+
+    // The sheet card appears with the partitioned ABC document (rendered as
+    // fallback text in tests, where no webview platform exists). It sits
+    // below the fold of the lazy ListView, so scroll it into view first.
+    await tester.dragUntilVisible(
+      find.byType(SheetMusicView),
+      find.byType(ListView),
+      const Offset(0, -100),
+    );
+    expect(find.byType(SheetMusicView), findsOneWidget);
+    expect(find.textContaining('D E ^F'), findsOneWidget);
   });
 
   testWidgets('shows a warning when input is empty', (tester) async {
