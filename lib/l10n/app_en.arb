@@ -24,5 +24,15 @@
     }
   },
   "swapInstrumentsTooltip": "Swap instruments",
-  "sheetLabel": "Sheet music"
+  "sheetLabel": "Sheet music",
+  "scanSectionTitle": "Read notes from a photo",
+  "scanFromCamera": "Camera",
+  "scanFromGallery": "Gallery",
+  "aiReadingIndicator": "Reading notes from the image...",
+  "aiReadSuccess": "Notes read from the image. Review them, then transpose.",
+  "aiNetworkError": "No internet connection. Please check your network and try again.",
+  "aiMissingKeyError": "Gemini API key is not configured for this build.",
+  "aiNoNotesError": "No readable notes were found in this image.",
+  "aiGenericError": "The AI service could not process the image. Please try again.",
+  "imagePickError": "The image could not be loaded."
 }

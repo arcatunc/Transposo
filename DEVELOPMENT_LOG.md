@@ -16,7 +16,7 @@ This document tracks project decisions and phase-by-phase progress. It is update
 
 | Topic | Decision |
 |---|---|
-| Gemini integration | Direct REST calls with the `http` package — **not** the deprecated `google_generative_ai` package. Model: `gemini-flash-latest`, kept in a single constants file so it's easy to swap. API key via `--dart-define=GEMINI_API_KEY=...`. |
+| Gemini integration | Direct REST calls with the `http` package — **not** the deprecated `google_generative_ai` package. Model: `gemini-2.5-flash`, kept in a single constants file so it's easy to swap. API key via `--dart-define=GEMINI_API_KEY=...`. |
 | Octave wrap | **Fixed** (differs from the Python original): transpositions crossing the B→C boundary carry the octave marker, e.g. A +4 semitones → `C#+`. |
 | Instruments | Common band set grouped by key: C (Piano/Flute/Violin/Guitar) = 0, B♭ (Trumpet/Clarinet/Soprano & Tenor Sax) = +2, E♭ (Alto & Baritone Sax) = +9, F (French Horn) = +7. |
 | Platform | Android first (iOS scaffolded but untested — needs a Mac). User installs Android Studio / SDK himself. |
@@ -31,8 +31,8 @@ This document tracks project decisions and phase-by-phase progress. It is update
 d:\Transposo
 ├── PROJECT_ROADMAP.md          # Original project idea, phases, and test scenarios
 ├── DEVELOPMENT_LOG.md          # This file — rules, decisions, per-phase progress
-├── pubspec.yaml                # Deps: flutter_localizations + intl + webview_flutter; `generate: true`;
-│                               #   bundles assets/abcjs_template.html + abcjs-basic-min.js
+├── pubspec.yaml                # Deps: flutter_localizations + intl + webview_flutter + http + image_picker;
+│                               #   `generate: true`; bundles assets/abcjs_template.html + abcjs-basic-min.js
 ├── l10n.yaml                   # gen-l10n config (arb-dir lib/l10n, outputs app_localizations.dart)
 ├── assets/
 │   ├── abcjs_template.html     # Webview page: pinch-to-zoom viewport, #paper div,
@@ -50,10 +50,19 @@ d:\Transposo
 │   │   └── measure_partitioner.dart  # partitionIntoMeasures(): bar line every 4.0 beats,
 │   │                           #   line break every 4 measures; buildAbcDocument(): adds
 │   │                           #   X/M/L/K header (4/4, L:1/4 so beat 1 = quarter note)
+│   ├── services/
+│   │   ├── gemini_config.dart  # All Gemini constants in one place: model `gemini-flash-latest`,
+│   │   │                       #   REST endpoint, API key from --dart-define, extraction prompt
+│   │   └── gemini_vision_service.dart  # GeminiVisionService.extractNotes(bytes, mimeType):
+│   │                           #   REST generateContent call via `http`, sealed GeminiException
+│   │                           #   subtypes (missing key / network / API / no notes)
 │   ├── screens/
-│   │   └── home_screen.dart    # Single-page UI: source/target instrument dropdowns + swap button,
-│   │                           #   multiline note TextField, transpose FilledButton, result card,
-│   │                           #   sheet music card (SheetMusicView), snackbars for bad input
+│   │   └── home_screen.dart    # Single-page UI: scan-from-photo section (camera/gallery buttons,
+│   │                           #   image preview, progress overlay), source/target instrument
+│   │                           #   dropdowns + swap button, multiline note TextField, transpose
+│   │                           #   FilledButton, result card, sheet music card (SheetMusicView),
+│   │                           #   snackbars for bad input and AI errors; visionService and
+│   │                           #   pickImage are constructor-injectable for tests
 │   ├── widgets/
 │   │   └── sheet_music_view.dart  # Webview wrapper: loads abcjs_template.html via
 │   │                           #   loadFlutterAsset, pushes ABC text through renderAbc() JS;
@@ -67,6 +76,10 @@ d:\Transposo
 │   ├── transposition_test.dart # Engine tests: roadmap scenarios 1–3, octave carry, ABC formatting
 │   ├── measure_partitioner_test.dart  # Bar lines, fractional beats, 4-measure line breaks,
 │   │                           #   spill-over notes, empty input, ABC header
+│   ├── gemini_vision_service_test.dart  # Service tests with MockClient: request shape,
+│   │                           #   fence stripping, missing key, API error, network error, NONE
+│   ├── gemini_home_flow_test.dart  # Widget tests with injected fake service: mock AI output
+│   │                           #   lands in the input field, network error snackbar, cancelled pick
 │   └── home_screen_test.dart   # Widget tests: transpose flow + sheet card, empty-input warning, swap
 ├── android/ ios/               # Platform scaffolds (org com.arcatunc, app id com.arcatunc.transposo)
 ```
@@ -130,9 +143,19 @@ d:\Transposo
 
 **Verification:** `flutter analyze` clean; 21/21 tests passing. Needs re-check on the Android device (transpose, rotate both ways, background/foreground).
 
-### ⏳ Phase 3 — Gemini Vision Integration (not started)
+### ✅ Phase 3 — Gemini Vision Integration (2026-07-12)
 
-Planned: `image_picker` camera/gallery input, Gemini REST call sending image + structured prompt, result piped into the note input field, offline/error handling via snackbar.
+**Built:**
+- `lib/services/gemini_config.dart`: every Gemini constant in one file per the agreed decision — model `gemini-flash-latest`, `v1beta generateContent` endpoint, API key read at compile time via `String.fromEnvironment('GEMINI_API_KEY')`, and the structured extraction prompt (output rules: space-separated `Note:Beat` tokens only, `+`/`-` octave markers relative to the C4 octave, beats in quarter notes, `NONE` when no sheet music is readable).
+- `lib/services/gemini_vision_service.dart`: `GeminiVisionService.extractNotes(bytes, mimeType)` posts the prompt + base64 `inline_data` image to Gemini over plain `http` (temperature 0, 60 s timeout, key sent via the `x-goog-api-key` header). Responses are sanitized (code fences stripped, whitespace collapsed). Failures are typed as a sealed `GeminiException` hierarchy: `GeminiMissingKeyException` (no `--dart-define` key), `GeminiNetworkException` (offline/DNS/timeout), `GeminiApiException` (non-200, carries the API's error message), `GeminiNoNotesException` (empty candidates or literal `NONE`).
+- `home_screen.dart`: new "Read notes from a photo" section at the top of the input card — Camera and Gallery `OutlinedButton`s (`image_picker`, downscaled to max 2048 px / 90 quality), a preview thumbnail of the picked image with a progress overlay while Gemini runs, and the extracted token string written straight into the note input field for review before transposing. Every `GeminiException` subtype maps to its own localized snackbar; both the service and the pick function are constructor-injectable (`visionService`, `pickImage`) so widget tests run without platform plugins or network.
+- l10n: 8 new keys in EN and TR (scan section title, camera/gallery labels, reading indicator, success, network / missing key / no notes / generic errors, pick error).
+- Platform config: `INTERNET` permission added to the Android manifest; `NSCameraUsageDescription` + `NSPhotoLibraryUsageDescription` added to the iOS `Info.plist` (still untested on iOS).
+- Tests: `test/gemini_vision_service_test.dart` (MockClient: request URL/headers/body shape, fence stripping, missing key short-circuits before any network call, API error message extraction, network failure, `NONE` and empty-candidates cases) and `test/gemini_home_flow_test.dart` (roadmap scenario 2: injected fake service puts `C:1 D:1 E:1` into the input field; network error shows a snackbar and leaves the field untouched; cancelled pick is a no-op). Existing home screen tests updated to scroll the transpose button and result card into view, since the scan section now pushes them below the test viewport fold.
+
+**Decisions:** the key travels in the `x-goog-api-key` header rather than the URL query string so it never appears in logs. Extraction does not auto-transpose; the user reviews/edits the AI output in the input field first. `image_picker` needs no extra Android permissions (it uses the system picker/camera intents), only `INTERNET` was added.
+
+**Verification:** `flutter analyze` clean; 31/31 tests passing. Roadmap scenarios 1 (device permission prompt + image indicator) and 3 (airplane-mode snackbar) still need an on-device check with a real API key (`flutter run --dart-define=GEMINI_API_KEY=...`).
 
 ### ⏳ Phase 4 — Persistence, History & Polish (not started)
 

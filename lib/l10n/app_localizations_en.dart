@@ -71,4 +71,38 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sheetLabel => 'Sheet music';
+
+  @override
+  String get scanSectionTitle => 'Read notes from a photo';
+
+  @override
+  String get scanFromCamera => 'Camera';
+
+  @override
+  String get scanFromGallery => 'Gallery';
+
+  @override
+  String get aiReadingIndicator => 'Reading notes from the image...';
+
+  @override
+  String get aiReadSuccess =>
+      'Notes read from the image. Review them, then transpose.';
+
+  @override
+  String get aiNetworkError =>
+      'No internet connection. Please check your network and try again.';
+
+  @override
+  String get aiMissingKeyError =>
+      'Gemini API key is not configured for this build.';
+
+  @override
+  String get aiNoNotesError => 'No readable notes were found in this image.';
+
+  @override
+  String get aiGenericError =>
+      'The AI service could not process the image. Please try again.';
+
+  @override
+  String get imagePickError => 'The image could not be loaded.';
 }

@@ -24,5 +24,15 @@
     }
   },
   "swapInstrumentsTooltip": "Enstrümanları değiştir",
-  "sheetLabel": "Nota görünümü"
+  "sheetLabel": "Nota görünümü",
+  "scanSectionTitle": "Fotoğraftan nota oku",
+  "scanFromCamera": "Kamera",
+  "scanFromGallery": "Galeri",
+  "aiReadingIndicator": "Görüntüdeki notalar okunuyor...",
+  "aiReadSuccess": "Notalar görüntüden okundu. Kontrol edip dönüştürebilirsiniz.",
+  "aiNetworkError": "İnternet bağlantısı yok. Lütfen bağlantınızı kontrol edip tekrar deneyin.",
+  "aiMissingKeyError": "Bu sürümde Gemini API anahtarı tanımlı değil.",
+  "aiNoNotesError": "Bu görüntüde okunabilir nota bulunamadı.",
+  "aiGenericError": "Yapay zeka servisi görüntüyü işleyemedi. Lütfen tekrar deneyin.",
+  "imagePickError": "Görüntü yüklenemedi."
 }

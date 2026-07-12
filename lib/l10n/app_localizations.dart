@@ -205,6 +205,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sheet music'**
   String get sheetLabel;
+
+  /// No description provided for @scanSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Read notes from a photo'**
+  String get scanSectionTitle;
+
+  /// No description provided for @scanFromCamera.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera'**
+  String get scanFromCamera;
+
+  /// No description provided for @scanFromGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Gallery'**
+  String get scanFromGallery;
+
+  /// No description provided for @aiReadingIndicator.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading notes from the image...'**
+  String get aiReadingIndicator;
+
+  /// No description provided for @aiReadSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes read from the image. Review them, then transpose.'**
+  String get aiReadSuccess;
+
+  /// No description provided for @aiNetworkError.
+  ///
+  /// In en, this message translates to:
+  /// **'No internet connection. Please check your network and try again.'**
+  String get aiNetworkError;
+
+  /// No description provided for @aiMissingKeyError.
+  ///
+  /// In en, this message translates to:
+  /// **'Gemini API key is not configured for this build.'**
+  String get aiMissingKeyError;
+
+  /// No description provided for @aiNoNotesError.
+  ///
+  /// In en, this message translates to:
+  /// **'No readable notes were found in this image.'**
+  String get aiNoNotesError;
+
+  /// No description provided for @aiGenericError.
+  ///
+  /// In en, this message translates to:
+  /// **'The AI service could not process the image. Please try again.'**
+  String get aiGenericError;
+
+  /// No description provided for @imagePickError.
+  ///
+  /// In en, this message translates to:
+  /// **'The image could not be loaded.'**
+  String get imagePickError;
 }
 
 class _AppLocalizationsDelegate

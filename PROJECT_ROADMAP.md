@@ -50,7 +50,7 @@
 *   **Objective:** Introduce multimodal image input pipelines directly resolving serverless data processing tasks without hosted backends.
 *   **Actionable Tasks:**
     1. Integrate the `image_picker` workflow to fetch camera payloads or disk imagery.
-    2. Wire up the `google_generative_ai` service. Send binary image arrays paired with the structured system prompt to a serverless Gemini 1.5 Flash endpoint, passing the generated raw strings straight into the text preview field.
+    2. Wire up the `google_generative_ai` service. Send binary image arrays paired with the structured system prompt to a serverless gemini-2.5-flash endpoint, passing the generated raw strings straight into the text preview field.
 *   **Test Scenarios:**
     1.  *Media Capture Routine:* Verify tapping the capture trigger asks for device hardware access permissions and shows chosen image indicators correctly.
     2.  *Mock AI Sequence Injection:* Create an isolated unit mock that injects static output `C:1 D:1 E:1` into the processing pipeline, checking that UI fields receive information as expected.

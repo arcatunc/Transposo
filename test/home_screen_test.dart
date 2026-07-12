@@ -11,10 +11,24 @@ void main() {
 
     await tester.enterText(find.byType(TextField), 'C:1 D:1 E:1');
 
-    // Defaults are source C and target Bb, so just transpose.
+    // Defaults are source C and target Bb, so just transpose. The button can
+    // sit below the fold now that the scan section is above it, so scroll it
+    // into view first.
+    await tester.dragUntilVisible(
+      find.byType(FilledButton),
+      find.byType(ListView),
+      const Offset(0, -100),
+    );
     await tester.tap(find.byType(FilledButton));
     await tester.pumpAndSettle();
 
+    // The result card is below the fold of the lazy ListView, so scroll it
+    // into view before asserting on it.
+    await tester.dragUntilVisible(
+      find.text('D:1 E:1 F#:1'),
+      find.byType(ListView),
+      const Offset(0, -100),
+    );
     expect(find.text('D:1 E:1 F#:1'), findsOneWidget);
 
     // The sheet card appears with the partitioned ABC document (rendered as
@@ -33,6 +47,11 @@ void main() {
     await tester.pumpWidget(const TransposoApp());
     await tester.pumpAndSettle();
 
+    await tester.dragUntilVisible(
+      find.byType(FilledButton),
+      find.byType(ListView),
+      const Offset(0, -100),
+    );
     await tester.tap(find.byType(FilledButton));
     await tester.pump();
 
@@ -49,9 +68,19 @@ void main() {
 
     // After the swap, Bb -> C transposes C down two semitones to Bb-.
     await tester.enterText(find.byType(TextField), 'C:1');
+    await tester.dragUntilVisible(
+      find.byType(FilledButton),
+      find.byType(ListView),
+      const Offset(0, -100),
+    );
     await tester.tap(find.byType(FilledButton));
     await tester.pumpAndSettle();
 
+    await tester.dragUntilVisible(
+      find.text('Bb-:1'),
+      find.byType(ListView),
+      const Offset(0, -100),
+    );
     expect(find.text('Bb-:1'), findsOneWidget);
   });
 }

@@ -73,4 +73,38 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get sheetLabel => 'Nota görünümü';
+
+  @override
+  String get scanSectionTitle => 'Fotoğraftan nota oku';
+
+  @override
+  String get scanFromCamera => 'Kamera';
+
+  @override
+  String get scanFromGallery => 'Galeri';
+
+  @override
+  String get aiReadingIndicator => 'Görüntüdeki notalar okunuyor...';
+
+  @override
+  String get aiReadSuccess =>
+      'Notalar görüntüden okundu. Kontrol edip dönüştürebilirsiniz.';
+
+  @override
+  String get aiNetworkError =>
+      'İnternet bağlantısı yok. Lütfen bağlantınızı kontrol edip tekrar deneyin.';
+
+  @override
+  String get aiMissingKeyError =>
+      'Bu sürümde Gemini API anahtarı tanımlı değil.';
+
+  @override
+  String get aiNoNotesError => 'Bu görüntüde okunabilir nota bulunamadı.';
+
+  @override
+  String get aiGenericError =>
+      'Yapay zeka servisi görüntüyü işleyemedi. Lütfen tekrar deneyin.';
+
+  @override
+  String get imagePickError => 'Görüntü yüklenemedi.';
 }
