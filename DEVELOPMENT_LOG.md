@@ -16,7 +16,7 @@ This document tracks project decisions and phase-by-phase progress. It is update
 
 | Topic | Decision |
 |---|---|
-| Gemini integration | Direct REST calls with the `http` package — **not** the deprecated `google_generative_ai` package. Model: `gemini-2.5-flash`, kept in a single constants file so it's easy to swap. API key via `--dart-define=GEMINI_API_KEY=...`. |
+| Gemini integration | Direct REST calls with the `http` package — **not** the deprecated `google_generative_ai` package. Model: the `gemini-flash-latest` alias (Google retired the pinned `gemini-2.5-flash` for new API keys on 2026-07-09 with an HTTP 404; the alias always tracks the newest Flash model). Kept in a single constants file so it's easy to swap. API key via `--dart-define=GEMINI_API_KEY=...`. |
 | Octave wrap | **Fixed** (differs from the Python original): transpositions crossing the B→C boundary carry the octave marker, e.g. A +4 semitones → `C#+`. |
 | Instruments | Common band set grouped by key: C (Piano/Flute/Violin/Guitar) = 0, B♭ (Trumpet/Clarinet/Soprano & Tenor Sax) = +2, E♭ (Alto & Baritone Sax) = +9, F (French Horn) = +7. |
 | Platform | Android first (iOS scaffolded but untested — needs a Mac). User installs Android Studio / SDK himself. |
@@ -156,6 +156,26 @@ d:\Transposo
 **Decisions:** the key travels in the `x-goog-api-key` header rather than the URL query string so it never appears in logs. Extraction does not auto-transpose; the user reviews/edits the AI output in the input field first. `image_picker` needs no extra Android permissions (it uses the system picker/camera intents), only `INTERNET` was added.
 
 **Verification:** `flutter analyze` clean; 31/31 tests passing. Roadmap scenarios 1 (device permission prompt + image indicator) and 3 (airplane-mode snackbar) still need an on-device check with a real API key (`flutter run --dart-define=GEMINI_API_KEY=...`).
+
+#### Hotfix 3.1 — Gemini model retired (2026-07-14)
+
+**Symptom:** photo scan failed with HTTP 404 "This model gemini-2.5-flash is no longer available to new users" after switching to a new API key.
+
+**Cause:** Google retired the pinned `gemini-2.5-flash` for new API keys on 2026-07-09, ahead of its announced 2026-10-16 shutdown.
+
+**Fix:** `gemini_config.dart` now uses the `gemini-flash-latest` alias (currently resolving to Gemini 3.5 Flash), which always tracks the newest Flash model so future retirements cannot break the app. The decisions table above records this. `home_screen.dart` additionally appends the HTTP status code and API error message to the generic AI error snackbar so failures are diagnosable on-device.
+
+**Verification:** `flutter analyze` clean; 31/31 tests passing.
+
+#### Hotfix 3.2 — smart beaming of short notes (2026-07-14)
+
+**Symptom:** consecutive eighth (0.5) and sixteenth (0.25) notes rendered as separate flagged notes instead of being beamed together as in standard notation.
+
+**Cause:** `partitionIntoMeasures()` joined every ABC token with a space; ABCJS only beams notes written without a space between them.
+
+**Fix (`measure_partitioner.dart`):** within a measure, two consecutive notes that are both shorter than 1.0 beat are written with no separator (`G/2A/2`) so ABCJS beams them; a space is kept when either neighbour is a quarter note or longer, and beam groups never continue across a bar line (the separator state resets on measure flush).
+
+**Verification:** `flutter analyze` clean; 33/33 tests passing (two updated expectations plus two new beaming tests: mixed-duration beam breaking and no beaming across bar lines).
 
 ### ⏳ Phase 4 — Persistence, History & Polish (not started)
 

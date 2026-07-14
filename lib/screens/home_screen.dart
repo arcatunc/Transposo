@@ -98,8 +98,9 @@ class _HomeScreenState extends State<HomeScreen> {
       _showSnack(l10n.aiNetworkError);
     } on GeminiNoNotesException {
       _showSnack(l10n.aiNoNotesError);
-    } on GeminiApiException {
-      _showSnack(l10n.aiGenericError);
+    } on GeminiApiException catch (e) {
+      debugPrint('Gemini API error ${e.statusCode}: ${e.message}');
+      _showSnack('${l10n.aiGenericError}\nHTTP ${e.statusCode}: ${e.message}');
     } finally {
       if (mounted) setState(() => _isReadingImage = false);
     }

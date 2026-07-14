@@ -15,7 +15,7 @@ void main() {
       final result = partitionIntoMeasures(
         notesOf('C:0.5 D:0.5 E:0.25 F:0.25 G:0.5 A:2'),
       );
-      expect(result, 'C/2 D/2 E/4 F/4 G/2 A2');
+      expect(result, 'C/2D/2E/4F/4G/2 A2');
     });
 
     test('accumulated fractions still close the bar at exactly 4 beats', () {
@@ -23,7 +23,26 @@ void main() {
       final result = partitionIntoMeasures(
         notesOf('C:0.5 C:0.5 C:0.5 C:0.5 C:0.5 C:0.5 C:0.5 C:0.5 D:1'),
       );
-      expect(result, 'C/2 C/2 C/2 C/2 C/2 C/2 C/2 C/2 | D');
+      expect(result, 'C/2C/2C/2C/2C/2C/2C/2C/2 | D');
+    });
+
+    test('smart beaming: sub-beat neighbours join, longer notes break beams',
+        () {
+      // Eighths around a quarter note: the quarter keeps spaces on both
+      // sides, the eighth pairs are glued so ABCJS beams them.
+      final result = partitionIntoMeasures(
+        notesOf('C:0.5 D:0.5 E:1 F:0.5 G:0.5 A:1'),
+      );
+      expect(result, 'C/2D/2 E F/2G/2 A');
+    });
+
+    test('smart beaming does not join across a bar line', () {
+      // Four eighths finish measure one; the following eighths start
+      // measure two after the bar, not beamed to the previous group.
+      final result = partitionIntoMeasures(
+        notesOf('C:1 D:1 E:1 F:0.5 G:0.5 A:0.5 B:0.5 C:3'),
+      );
+      expect(result, 'C D E F/2G/2 | A/2B/2 C3');
     });
 
     test('line break appended after every 4 measures', () {

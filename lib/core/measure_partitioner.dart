@@ -11,6 +11,12 @@ const double _epsilon = 1e-9;
 /// [beatsPerMeasure] cumulative beats and a line break every
 /// [measuresPerLine] measures.
 ///
+/// Smart beaming: within a measure, two consecutive notes that are BOTH
+/// shorter than a beat (eighths, sixteenths) are written without a space
+/// between them (`G/2A/2`), which makes ABCJS beam them together. A space
+/// is kept whenever either neighbour is a quarter note or longer, breaking
+/// the beam group as standard notation expects.
+///
 /// Example: `C:2 D:2 E:1 F:1 G:2` becomes `C2 D2 | E F G2`.
 String partitionIntoMeasures(
   List<TransposedNote> notes, {
@@ -19,13 +25,15 @@ String partitionIntoMeasures(
 }) {
   final lines = <String>[];
   final measuresInLine = <String>[];
-  final currentMeasure = <String>[];
+  final currentMeasure = StringBuffer();
+  double? previousBeat;
   var beats = 0.0;
 
   void flushMeasure() {
     if (currentMeasure.isEmpty) return;
-    measuresInLine.add(currentMeasure.join(' '));
+    measuresInLine.add(currentMeasure.toString());
     currentMeasure.clear();
+    previousBeat = null;
     if (measuresInLine.length == measuresPerLine) {
       lines.add(measuresInLine.join(' | '));
       measuresInLine.clear();
@@ -41,7 +49,12 @@ String partitionIntoMeasures(
       }
       flushMeasure();
     }
-    currentMeasure.add(note.abc);
+    if (currentMeasure.isNotEmpty) {
+      final beamWithPrevious = previousBeat! < 1.0 && note.beat < 1.0;
+      if (!beamWithPrevious) currentMeasure.write(' ');
+    }
+    currentMeasure.write(note.abc);
+    previousBeat = note.beat;
     beats += note.beat;
   }
   flushMeasure();
