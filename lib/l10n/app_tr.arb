@@ -34,5 +34,13 @@
   "aiMissingKeyError": "Bu sürümde Gemini API anahtarı tanımlı değil.",
   "aiNoNotesError": "Bu görüntüde okunabilir nota bulunamadı.",
   "aiGenericError": "Yapay zeka servisi görüntüyü işleyemedi. Lütfen tekrar deneyin.",
-  "imagePickError": "Görüntü yüklenemedi."
+  "imagePickError": "Görüntü yüklenemedi.",
+  "historyTooltip": "Dönüşüm geçmişi",
+  "historyTitle": "Geçmiş",
+  "historyEmpty": "Henüz dönüşüm yok.",
+  "historyClear": "Temizle",
+  "instrumentShortC": "Do",
+  "instrumentShortBb": "Si♭",
+  "instrumentShortEb": "Mi♭",
+  "instrumentShortF": "Fa"
 }

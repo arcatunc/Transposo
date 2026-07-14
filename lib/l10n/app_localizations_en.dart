@@ -105,4 +105,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get imagePickError => 'The image could not be loaded.';
+
+  @override
+  String get historyTooltip => 'Conversion history';
+
+  @override
+  String get historyTitle => 'History';
+
+  @override
+  String get historyEmpty => 'No conversions yet.';
+
+  @override
+  String get historyClear => 'Clear';
+
+  @override
+  String get instrumentShortC => 'C';
+
+  @override
+  String get instrumentShortBb => 'Bb';
+
+  @override
+  String get instrumentShortEb => 'Eb';
+
+  @override
+  String get instrumentShortF => 'F';
 }

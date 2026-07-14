@@ -1,11 +1,14 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import '../core/instruments.dart';
 import '../l10n/app_localizations.dart';
 import '../core/measure_partitioner.dart';
 import '../core/transposition.dart';
+import '../services/app_storage.dart';
 import '../services/gemini_vision_service.dart';
 import '../widgets/sheet_music_view.dart';
 
@@ -14,13 +17,21 @@ import '../widgets/sheet_music_view.dart';
 typedef PickImageFn = Future<XFile?> Function(ImageSource source);
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, this.visionService, this.pickImage});
+  const HomeScreen({
+    super.key,
+    this.visionService,
+    this.pickImage,
+    this.storage,
+  });
 
   /// Gemini service override for tests; the real one is created lazily.
   final GeminiVisionService? visionService;
 
   /// Image picker override for tests.
   final PickImageFn? pickImage;
+
+  /// Persistence override for tests.
+  final AppStorage? storage;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -46,10 +57,86 @@ class _HomeScreenState extends State<HomeScreen> {
   Uint8List? _pickedImageBytes;
   bool _isReadingImage = false;
 
+  late final AppStorage _storage = widget.storage ?? AppStorage();
+  List<ConversionRecord> _history = [];
+  Timer? _liveUpdateDebounce;
+
+  /// Debounce for persisting and live re-rendering while the user types.
+  static const _liveUpdateDelay = Duration(milliseconds: 400);
+
+  @override
+  void initState() {
+    super.initState();
+    _notesController.addListener(_onNotesChanged);
+    _restoreState();
+  }
+
   @override
   void dispose() {
+    _liveUpdateDebounce?.cancel();
     _notesController.dispose();
     super.dispose();
+  }
+
+  /// Loads the persisted workspace and history on launch (roadmap Phase 4
+  /// scenario 1: state survives an app restart).
+  Future<void> _restoreState() async {
+    final workspace = await _storage.loadWorkspace();
+    final history = await _storage.loadHistory();
+    if (!mounted) return;
+    setState(() {
+      _history = history;
+      if (workspace != null) {
+        _source = workspace.source;
+        _target = workspace.target;
+        _notesController.text = workspace.input;
+      }
+    });
+  }
+
+  /// Fires on every keystroke in the notes field; after a short pause it
+  /// persists the workspace and, when a result is already on screen, silently
+  /// re-transposes so the sheet music follows the edit in real time
+  /// (roadmap Phase 4 scenario 3).
+  void _onNotesChanged() {
+    _liveUpdateDebounce?.cancel();
+    _liveUpdateDebounce = Timer(_liveUpdateDelay, () {
+      _persistWorkspace();
+      if (_hasTransposed) _retranspose();
+    });
+  }
+
+  void _persistWorkspace() {
+    unawaited(_storage.saveWorkspace(
+      input: _notesController.text,
+      source: _source,
+      target: _target,
+    ));
+  }
+
+  /// Recomputes the result from the current input without snackbars and
+  /// without recording history, used for live updates and history restores.
+  void _retranspose() {
+    if (!mounted) return;
+    final input = _notesController.text.trim();
+    final tokenCount =
+        input.split(RegExp(r'\s+')).where((t) => t.isNotEmpty).length;
+    final result = input.isEmpty
+        ? <TransposedNote>[]
+        : transposeSequence(
+            input,
+            _source.semitoneOffset,
+            _target.semitoneOffset,
+          );
+    setState(() {
+      _result = result;
+      _skippedCount = tokenCount - result.length;
+    });
+  }
+
+  void _onInstrumentsChanged() {
+    _persistWorkspace();
+    if (_hasTransposed) _retranspose();
   }
 
   /// Infers the mime type sent to Gemini from the picked file.
@@ -146,6 +233,11 @@ class _HomeScreenState extends State<HomeScreen> {
       _hasTransposed = true;
     });
 
+    _persistWorkspace();
+    if (result.isNotEmpty) {
+      unawaited(_recordHistory(input));
+    }
+
     if (result.isEmpty) {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
@@ -159,12 +251,133 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _recordHistory(String input) async {
+    final history = await _storage.addHistoryRecord(ConversionRecord(
+      timestamp: DateTime.now(),
+      source: _source,
+      target: _target,
+      notes: input,
+    ));
+    if (mounted) setState(() => _history = history);
+  }
+
   void _swapInstruments() {
     setState(() {
       final tmp = _source;
       _source = _target;
       _target = tmp;
     });
+    _onInstrumentsChanged();
+  }
+
+  /// Fills the form from a past conversion and shows its result immediately
+  /// (roadmap Phase 4 scenario 2). Restoring does not add a history entry;
+  /// only the transpose button does.
+  void _restoreRecord(ConversionRecord record) {
+    setState(() {
+      _source = record.source;
+      _target = record.target;
+      _hasTransposed = true;
+    });
+    _notesController.text = record.notes;
+    _persistWorkspace();
+    _retranspose();
+  }
+
+  Future<void> _showHistory() async {
+    final l10n = AppLocalizations.of(context)!;
+    final locale = Localizations.localeOf(context).toString();
+    final dateFormat = DateFormat.yMMMd(locale).add_Hm();
+
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return SafeArea(
+              child: SizedBox(
+                height: MediaQuery.of(sheetContext).size.height * 0.6,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 0, 16, 8),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              l10n.historyTitle,
+                              style:
+                                  Theme.of(context).textTheme.titleLarge,
+                            ),
+                          ),
+                          if (_history.isNotEmpty)
+                            TextButton.icon(
+                              onPressed: () async {
+                                await _storage.clearHistory();
+                                if (mounted) {
+                                  setState(() => _history = []);
+                                }
+                                setSheetState(() {});
+                              },
+                              icon: const Icon(Icons.delete_outline),
+                              label: Text(l10n.historyClear),
+                            ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: _history.isEmpty
+                          ? Center(child: Text(l10n.historyEmpty))
+                          : ListView.separated(
+                              itemCount: _history.length,
+                              separatorBuilder: (context, index) =>
+                                  const Divider(height: 1),
+                              itemBuilder: (context, index) {
+                                final record = _history[index];
+                                return ListTile(
+                                  title: Text(
+                                    record.notes,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontFamily: 'monospace',
+                                    ),
+                                  ),
+                                  subtitle: Text(
+                                    '${dateFormat.format(record.timestamp)}'
+                                    '  ·  '
+                                    '${_instrumentShortName(l10n, record.source)}'
+                                    ' → '
+                                    '${_instrumentShortName(l10n, record.target)}',
+                                  ),
+                                  onTap: () {
+                                    Navigator.of(sheetContext).pop();
+                                    _restoreRecord(record);
+                                  },
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  String _instrumentShortName(AppLocalizations l10n, Instrument instrument) {
+    return switch (instrument) {
+      Instrument.c => l10n.instrumentShortC,
+      Instrument.bFlat => l10n.instrumentShortBb,
+      Instrument.eFlat => l10n.instrumentShortEb,
+      Instrument.f => l10n.instrumentShortF,
+    };
   }
 
   Widget _instrumentDropdown({
@@ -205,6 +418,13 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: Text(l10n.appTitle),
         centerTitle: true,
+        actions: [
+          IconButton(
+            tooltip: l10n.historyTooltip,
+            icon: const Icon(Icons.history),
+            onPressed: _showHistory,
+          ),
+        ],
       ),
       body: SafeArea(
         child: ListView(
@@ -218,7 +438,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     _instrumentDropdown(
                       label: l10n.sourceInstrument,
                       value: _source,
-                      onChanged: (v) => setState(() => _source = v),
+                      onChanged: (v) {
+                        setState(() => _source = v);
+                        _onInstrumentsChanged();
+                      },
                     ),
                     IconButton(
                       tooltip: l10n.swapInstrumentsTooltip,
@@ -228,7 +451,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     _instrumentDropdown(
                       label: l10n.targetInstrument,
                       value: _target,
-                      onChanged: (v) => setState(() => _target = v),
+                      onChanged: (v) {
+                        setState(() => _target = v);
+                        _onInstrumentsChanged();
+                      },
                     ),
                   ],
                 ),

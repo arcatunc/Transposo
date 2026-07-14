@@ -107,4 +107,28 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get imagePickError => 'Görüntü yüklenemedi.';
+
+  @override
+  String get historyTooltip => 'Dönüşüm geçmişi';
+
+  @override
+  String get historyTitle => 'Geçmiş';
+
+  @override
+  String get historyEmpty => 'Henüz dönüşüm yok.';
+
+  @override
+  String get historyClear => 'Temizle';
+
+  @override
+  String get instrumentShortC => 'Do';
+
+  @override
+  String get instrumentShortBb => 'Si♭';
+
+  @override
+  String get instrumentShortEb => 'Mi♭';
+
+  @override
+  String get instrumentShortF => 'Fa';
 }

@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:transposo/l10n/app_localizations.dart';
 import 'package:transposo/screens/home_screen.dart';
 import 'package:transposo/services/gemini_vision_service.dart';
@@ -46,6 +47,10 @@ Widget _app({required GeminiVisionService service, PickImageFn? pickImage}) {
 }
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   testWidgets('mock AI output lands in the notes input field', (tester) async {
     await tester.pumpWidget(_app(service: _FakeVisionService('C:1 D:1 E:1')));
     await tester.pumpAndSettle();

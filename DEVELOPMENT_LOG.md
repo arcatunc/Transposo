@@ -22,6 +22,7 @@ This document tracks project decisions and phase-by-phase progress. It is update
 | Platform | Android first (iOS scaffolded but untested — needs a Mac). User installs Android Studio / SDK himself. |
 | Localization | English + Turkish via ARB files (`flutter gen-l10n`), following system locale. |
 | Note format | `Note[:Beat]` tokens, space-separated. Octave up `A+:1`, down `A-:1` (markers stackable, e.g. `C#++`). Beat defaults to 1; enharmonic input accepted (`Bb`, `Db`, `B#`…). Malformed tokens are skipped silently with a UI notice. |
+| Persistence | `shared_preferences` (not hive): no codegen, data is simple key-value plus one JSON history list capped at 50 records. History stores input notes only; output is recomputed on restore. |
 
 ---
 
@@ -31,8 +32,9 @@ This document tracks project decisions and phase-by-phase progress. It is update
 d:\Transposo
 ├── PROJECT_ROADMAP.md          # Original project idea, phases, and test scenarios
 ├── DEVELOPMENT_LOG.md          # This file — rules, decisions, per-phase progress
-├── pubspec.yaml                # Deps: flutter_localizations + intl + webview_flutter + http + image_picker;
-│                               #   `generate: true`; bundles assets/abcjs_template.html + abcjs-basic-min.js
+├── pubspec.yaml                # Deps: flutter_localizations + intl + webview_flutter + http + image_picker
+│                               #   + shared_preferences; `generate: true`; bundles assets/abcjs_template.html
+│                               #   + abcjs-basic-min.js
 ├── l10n.yaml                   # gen-l10n config (arb-dir lib/l10n, outputs app_localizations.dart)
 ├── assets/
 │   ├── abcjs_template.html     # Webview page: pinch-to-zoom viewport, #paper div,
@@ -51,6 +53,9 @@ d:\Transposo
 │   │                           #   line break every 4 measures; buildAbcDocument(): adds
 │   │                           #   X/M/L/K header (4/4, L:1/4 so beat 1 = quarter note)
 │   ├── services/
+│   │   ├── app_storage.dart    # Phase 4 persistence: AppStorage over shared_preferences
+│   │   │                       #   (workspace input/source/target + JSON history, capped at 50),
+│   │   │                       #   ConversionRecord {timestamp, source, target, notes}, Workspace
 │   │   ├── gemini_config.dart  # All Gemini constants in one place: model `gemini-flash-latest`,
 │   │   │                       #   REST endpoint, API key from --dart-define, extraction prompt
 │   │   └── gemini_vision_service.dart  # GeminiVisionService.extractNotes(bytes, mimeType):
@@ -61,8 +66,10 @@ d:\Transposo
 │   │                           #   image preview, progress overlay), source/target instrument
 │   │                           #   dropdowns + swap button, multiline note TextField, transpose
 │   │                           #   FilledButton, result card, sheet music card (SheetMusicView),
-│   │                           #   snackbars for bad input and AI errors; visionService and
-│   │                           #   pickImage are constructor-injectable for tests
+│   │                           #   snackbars for bad input and AI errors; history AppBar action
+│   │                           #   (modal bottom sheet, tap to restore, clear all), workspace
+│   │                           #   restore on launch, debounced live re-transpose while typing;
+│   │                           #   visionService, pickImage and storage are constructor-injectable
 │   ├── widgets/
 │   │   └── sheet_music_view.dart  # Webview wrapper: loads abcjs_template.html via
 │   │                           #   loadFlutterAsset, pushes ABC text through renderAbc() JS;
@@ -80,15 +87,17 @@ d:\Transposo
 │   │                           #   fence stripping, missing key, API error, network error, NONE
 │   ├── gemini_home_flow_test.dart  # Widget tests with injected fake service: mock AI output
 │   │                           #   lands in the input field, network error snackbar, cancelled pick
-│   └── home_screen_test.dart   # Widget tests: transpose flow + sheet card, empty-input warning, swap
+│   ├── home_screen_test.dart   # Widget tests: transpose flow + sheet card, empty-input warning, swap
+│   ├── app_storage_test.dart   # Storage unit tests: workspace roundtrip, unknown instrument name,
+│   │                           #   history order/cap/clear, corrupted JSON treated as empty
+│   └── persistence_history_test.dart  # Phase 4 widget tests: restart restore, history record +
+│                               #   clear, tap-to-restore, live edit re-render
 ├── android/ ios/               # Platform scaffolds (org com.arcatunc, app id com.arcatunc.transposo)
 ```
 
 **Data flow (current):** `HomeScreen` reads the text input → `transposeSequence(input, source.semitoneOffset, target.semitoneOffset)` → list of `TransposedNote` → joined `.readable` strings shown in the result card, and in parallel `buildAbcDocument(result)` → `SheetMusicView` → `renderAbc()` inside the webview draws the staff.
 
-**Where future phases plug in:**
-- *Phase 3:* a Gemini REST service under `lib/services/` (model `gemini-flash-latest`, key from `--dart-define=GEMINI_API_KEY`), fed by `image_picker`, writing its output into the note input field.
-- *Phase 4:* persistence (`shared_preferences` or `hive`) + history UI; live re-render on input changes.
+**Persistence (Phase 4):** `AppStorage` (over `shared_preferences`) saves the workspace (input text + both instruments) on every change and reloads it on launch; each successful transpose prepends a `ConversionRecord` to a JSON history capped at 50. While typing, a 400 ms debounce silently re-transposes so the result card and the webview sheet follow the edit live.
 
 ## Progress
 
@@ -177,6 +186,16 @@ d:\Transposo
 
 **Verification:** `flutter analyze` clean; 33/33 tests passing (two updated expectations plus two new beaming tests: mixed-duration beam breaking and no beaming across bar lines).
 
-### ⏳ Phase 4 — Persistence, History & Polish (not started)
+### ✅ Phase 4 — Persistence, History & Live Re-render (2026-07-14)
 
-Planned: local persistence (`shared_preferences` or `hive`), conversion history UI, live re-render of the sheet while editing notes.
+**Built:**
+- `lib/services/app_storage.dart`: `AppStorage` wrapping `shared_preferences` (chosen over hive: no codegen, the data is simple key-value + one JSON list). `saveWorkspace`/`loadWorkspace` persist the input text and both instrument selections (instruments stored by enum `.name`, so reordering the enum cannot corrupt saved data). `ConversionRecord` {timestamp, source, target, notes} serializes to a JSON array under one key; `addHistoryRecord` prepends newest-first and trims to a 50-record cap; unparseable entries and corrupted JSON degrade to empty instead of crashing. History stores the *input* notes; the transposed output is recomputed on restore so records never go stale if the engine changes.
+- `home_screen.dart` — persistence wiring: on launch `_restoreState()` reloads the saved workspace and history; the workspace is saved on every instrument change, swap, transpose, and (debounced) keystroke. `AppStorage` is constructor-injectable like the other services.
+- `home_screen.dart` — history UI: a history icon in the AppBar opens a modal bottom sheet listing past conversions (notes in monospace, localized date via `intl` `DateFormat` + short instrument keys, e.g. `C → Bb` / `Do → Si♭`), with a clear-all button and a localized empty state. Tapping a record fills the fields and shows its result immediately; restoring does **not** add a history entry — only the transpose button records history, so restores cannot create duplicates.
+- `home_screen.dart` — live edit syncing: a listener on the note field debounces 400 ms, then persists the workspace and (once a result is on screen) silently re-transposes — no snackbars, no history writes — so the result card and the ABC sheet in the webview follow the edit in real time. `SheetMusicView.didUpdateWidget` already re-renders when the ABC string changes, so no webview changes were needed. Instrument changes also live-update the existing result.
+- l10n: 8 new keys in EN and TR (history tooltip/title/empty/clear + short instrument names).
+- Tests: `test/app_storage_test.dart` (workspace roundtrip, unknown instrument name, history order/cap/clear, corrupted JSON) and `test/persistence_history_test.dart` (all 3 roadmap Phase 4 scenarios: restart restore of text + dropdowns, transpose writes prefs + history record with clear-all, tap-to-restore updates fields and result, live edit updates result and sheet without pressing the button). Existing widget tests gained `SharedPreferences.setMockInitialValues({})` in `setUp` since the home screen now touches storage on init.
+
+**Decisions:** `shared_preferences` over hive (simpler, no codegen, data volume is tiny). History cap 50. Restores and live edits never write history; only the transpose button does.
+
+**Verification:** `flutter analyze` clean; 45/45 tests passing. On-device check still pending for the roadmap's lifecycle scenario (kill and relaunch the app on Android).

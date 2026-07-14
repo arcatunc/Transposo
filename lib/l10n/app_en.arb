@@ -34,5 +34,13 @@
   "aiMissingKeyError": "Gemini API key is not configured for this build.",
   "aiNoNotesError": "No readable notes were found in this image.",
   "aiGenericError": "The AI service could not process the image. Please try again.",
-  "imagePickError": "The image could not be loaded."
+  "imagePickError": "The image could not be loaded.",
+  "historyTooltip": "Conversion history",
+  "historyTitle": "History",
+  "historyEmpty": "No conversions yet.",
+  "historyClear": "Clear",
+  "instrumentShortC": "C",
+  "instrumentShortBb": "Bb",
+  "instrumentShortEb": "Eb",
+  "instrumentShortF": "F"
 }

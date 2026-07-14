@@ -265,6 +265,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The image could not be loaded.'**
   String get imagePickError;
+
+  /// No description provided for @historyTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversion history'**
+  String get historyTooltip;
+
+  /// No description provided for @historyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get historyTitle;
+
+  /// No description provided for @historyEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No conversions yet.'**
+  String get historyEmpty;
+
+  /// No description provided for @historyClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get historyClear;
+
+  /// No description provided for @instrumentShortC.
+  ///
+  /// In en, this message translates to:
+  /// **'C'**
+  String get instrumentShortC;
+
+  /// No description provided for @instrumentShortBb.
+  ///
+  /// In en, this message translates to:
+  /// **'Bb'**
+  String get instrumentShortBb;
+
+  /// No description provided for @instrumentShortEb.
+  ///
+  /// In en, this message translates to:
+  /// **'Eb'**
+  String get instrumentShortEb;
+
+  /// No description provided for @instrumentShortF.
+  ///
+  /// In en, this message translates to:
+  /// **'F'**
+  String get instrumentShortF;
 }
 
 class _AppLocalizationsDelegate
